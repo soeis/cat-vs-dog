@@ -1,0 +1,6 @@
+test/
+test_processed/
+train/
+train_classified/
+backup/
+*.h5
