@@ -13,22 +13,21 @@ np.random.shuffle(idx)
 x_train = x_train[idx]
 y_train = y_train[idx]
 
-input_tensor = Input(shape=[x_train.shape[1]])
-x = Dropout(0.8)(input_tensor)
-x = Dense(1024, activation='relu')(x)
-x = Dropout(0.5)(x)
-x = Dense(1, activation='sigmoid')(x)
+x = Input(shape=[x_train.shape[1]])
+y = Dropout(0.5)(x)
+y = Dense(1, activation='sigmoid', name='classifier')(y)
 
-model = Model(input_tensor, x)
+model = Model(x, y, name='GAP')
 
-model.compile(optimizer='adam',
+model.compile(optimizer='adadelta',
               loss='binary_crossentropy',
               metrics=['accuracy'])
 
-model.fit(x_train, y_train, batch_size=120, epochs=12, validation_split=0.2)
+
+model.fit(x_train, y_train, batch_size=20, epochs=5, validation_split=0.2, verbose=2)
 
 y_pred = model.predict(x_test, batch_size=20, verbose=1)
-y_pred = y_pred.clip(min=0.01, max=0.99)
+y_pred = y_pred.clip(min=0.005, max=0.995)
 
 table = pd.read_csv('sample_submission.csv')
 gen = ImageDataGenerator()
