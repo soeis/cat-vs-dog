@@ -3,12 +3,14 @@ import shutil
 from PIL import Image
 
 
+# rm -rf dirname; mkdir dirname
 def rmrf_mkdir(dirname):
     if os.path.exists(dirname):
         shutil.rmtree(dirname)
     os.mkdir(dirname)
 
 
+# resize image to 299*299, fill blank area with (147, 147, 147)
 def resize_cp(img_path, size, output_path):
     img = Image.open(img_path)
     width, height = img.size
@@ -20,6 +22,7 @@ def resize_cp(img_path, size, output_path):
     new_img.resize(size=size).save(output_path)
 
 
+# get image names of different type
 train_imgnames = os.listdir('train')
 test_imgnames = os.listdir('test')
 train_cat = filter(lambda x: x[:3] == 'cat', train_imgnames)
