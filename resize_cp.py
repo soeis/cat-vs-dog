@@ -38,4 +38,4 @@ for filename in train_cat:
 for filename in train_dog:
     resize_cp('train/' + filename, img_size, 'train_classified/dog/' + filename)
 for filename in test_imgnames:
-    resize_cp('test/' + filename, img_size, 'test_processed/all' + filename)
+    resize_cp('test/' + filename, img_size, 'test_processed/all/' + filename)
