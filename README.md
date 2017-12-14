@@ -16,8 +16,10 @@
 
 - 运行resize_cp.py，对原始数据进行简单预处理；
 
+- 运行preprocess.py，进一步进行图像预处理；
+
 - 运行write_fv.py生成特征向量文件fv_Xception.h5；
 
 - 运行cat_dog.py生成预测表格pred.csv，可提交kaggle上检验结果。
 
-- 需要安装的python库：pillow，Pandas
+- 需要安装的python库：pillow，Pandas, OpenCV
