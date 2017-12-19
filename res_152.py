@@ -56,7 +56,7 @@ def identity_block(input_tensor, kernel_size, filters, stage, block):
 
 
 def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2)):
-    '''conv_block is the block that has a conv layer at shortcut
+    """conv_block is the block that has a conv layer at shortcut
     # Arguments
         input_tensor: input tensor
         kernel_size: defualt 3, the kernel size of middle conv layer at main path
@@ -65,7 +65,7 @@ def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2))
         block: 'a','b'..., current block label, used for generating layer names
     Note that from stage 3, the first conv layer at main path is with subsample=(2,2)
     And the shortcut should have subsample=(2,2) as well
-    '''
+    """
     eps = 1.1e-5
     nb_filter1, nb_filter2, nb_filter3 = filters
     conv_name_base = 'res' + str(stage) + block + '_branch'
