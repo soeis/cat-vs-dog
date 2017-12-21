@@ -30,21 +30,20 @@ def salt_pepper(img, SNR):
 
 
 # hist_eq & flip_left_right & salt_pepper
-def enhance_img(dirname, clahe=False, flip_lr=False, salt=None):
-    img_names = os.listdir(dirname)
+def enhance_img(dir_in, dir_out, clahe=False, flip_lr=False, salt=None):
+    img_names = os.listdir(dir_in)
     for img_name in img_names:
         basename = img_name[0:-4]
-        img = Image.open('{0}/{1}'.format(dirname, img_name))
+        img = Image.open('{0}\\{1}'.format(dir_in, img_name))
         if clahe:
             img = pil_clahe(img, 8)
         if salt:
             img = salt_pepper(img, salt)
         if flip_lr:
             img.transpose(Image.FLIP_LEFT_RIGHT) \
-                .save('{0}/{1}.flip.jpg'.format(dirname, basename))
-        img.save('{0}/{1}'.format(dirname, img_name))
+                .save('{0}\\{1}.flip.jpg'.format(dir_out, basename))
+        img.save('{0}\\{1}'.format(dir_out, img_name))
 
 
-enhance_img('train_classified/cat', clahe=True, flip_lr=True)
-enhance_img('train_classified/dog', clahe=True, flip_lr=True)
-enhance_img('test_processed/all', clahe=True)
+enhance_img('train_classified\\cat', 'train_classified\\cat', flip_lr=True)
+enhance_img('train_classified\\dog', 'train_classified\\dog', flip_lr=True)

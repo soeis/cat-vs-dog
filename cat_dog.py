@@ -3,72 +3,117 @@ from keras.models import *
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import EarlyStopping
 import pandas as pd
+
+from sklearn.svm import SVC
+
 import re
 
-# read feature vectors from .h5 file
-with h5py.File('fv_Xception.h5', 'r') as h:
-    x_train = np.array(h['train'])
-    x_test = np.array(h['test'])
-    y_train = np.array(h['label'])
 
-# shuffle feature vectors
-idx = np.arange(x_train.shape[0])
-np.random.shuffle(idx)
-x_train = x_train[idx]
-y_train = y_train[idx]
+# load feature vectors from .h5 files
+def load_fv(fv_files):
+    fv_train, fv_test, label_train = ([], [], [])
+    for fv in fv_files:
+        with h5py.File(fv, 'r') as h5:
+            fv_train.append(np.array(h5['train']))
+            fv_test.append(np.array(h5['test']))
+            label_train = np.array(h5['label'])
+    fv_train = np.concatenate(fv_train, axis=1)
+    fv_test = np.concatenate(fv_test, axis=1)
 
-# build model
-x = Input(shape=[x_train.shape[1]])
-y = Dropout(0.5)(x)
-y = Dense(1, activation='sigmoid', name='classifier')(y)
-
-model = Model(x, y, name='GAP')
-
-model.compile(optimizer='adadelta',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-
-es = EarlyStopping(monitor='val_loss', patience=1)
-
-model.fit(x_train, y_train, batch_size=120, epochs=20, validation_split=0.2,
-          callbacks=[es], verbose=2)
-
-# predict test set
-y_pred = model.predict(x_test, batch_size=20, verbose=1)
-y_pred = y_pred.clip(min=0.005, max=0.995)
-
-df = pd.read_csv('sample_submission.csv')
-gen = ImageDataGenerator()
-img_size = [299, 299]
-test_gen = gen.flow_from_directory('test_processed', img_size, shuffle=False,
-                                   batch_size=20, class_mode=None)
-
-# write the df in the correct order
-for i, filename in enumerate(test_gen.filenames):
-    index = int(filename[filename.rfind('\\') + 1:filename.rfind('.')])
-    df.set_value(index - 1, 'label', y_pred[i])
-
-# save df
-df.to_csv('pred.csv', index=None)
+    return fv_train, fv_test, label_train
 
 
-with h5py.File('fv_Xception.h5', 'r') as h:
-    x_train = np.array(h['train'])
+# write prediction into .csv file
+def write_pred(pred, template, dst, clip=False):
+    if clip:
+        pred = pred.clip(min=0.004, max=0.996)
+    df = pd.read_csv(template)
+    gen = ImageDataGenerator()
+    img_size = [299, 299]
+    test_gen = gen.flow_from_directory('test_processed', img_size, shuffle=False,
+                                       batch_size=16, class_mode=None)
+    # write the df in the correct order
+    for i, filename in enumerate(test_gen.filenames):
+        index = int(filename[filename.rfind('\\') + 1:filename.rfind('.')])
+        df.set_value(index - 1, 'label', pred[i])
+    # save df
+    df.to_csv(dst, index=None)
 
-y_pred = model.predict(x_train, batch_size=20, verbose=1)
-df = pd.read_csv('train_pred.csv')
-train_gen = gen.flow_from_directory('train_classified', img_size, shuffle=False,
-                                    batch_size=20)
 
-idx_patten = re.compile(r'\.(\d+)\.')
-for i, filename in enumerate(train_gen.filenames):
-    kind = filename[0:3]
-    flip = filename.__contains__('flip')
-    index = int(idx_patten.search(filename).group(1))
-    if kind == 'dog':
-        index += 25000
-    if flip:
-        index += 12500
-    df.set_value(index - 1, 'label', y_pred[i])
+def main(batch_size, epochs, early_stop=True, patience=3, method='FC'):
+    if method not in ['FC', 'SVM']:
+        raise ValueError('Arg method must be either \'FC\' or \'SVM\'.')
 
-df.to_csv('train_pred.csv', index=None)
+    h5_files = ['fv_Xception.h5', 'fv_InceptionV3.h5']
+    x_train, x_test, y_train = load_fv(h5_files)
+
+    # shuffle feature vectors
+    idx = np.arange(x_train.shape[0])
+    np.random.shuffle(idx)
+    x_train = x_train[idx]
+    y_train = y_train[idx]
+
+    # build model
+    x = Input(shape=[x_train.shape[1]])
+    y = Dropout(0.5)(x)
+    if method == 'SVM':
+        y = Dense(20, activation='sigmoid', name='svm')(y)
+    y = Dense(1, activation='sigmoid', name='classifier')(y)
+
+    model = Model(x, y, name='GAP')
+
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    if early_stop:
+        es = EarlyStopping(monitor='val_loss', patience=patience)
+    else:
+        es = None
+    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=0.2,
+              callbacks=[es], verbose=2)
+
+    if method == 'SVM':
+        svm_model = Model(inputs=model.input, outputs=model.get_layer(name='svm').output)
+        svm_train = svm_model.predict(x_train, batch_size=16, verbose=1)
+
+        clf = SVC()
+        clf.fit(svm_train, y_train)
+
+        svm_test = svm_model.predict(x_test, batch_size=16, verbose=1)
+
+        # predict test set
+        y_pred = clf.predict(svm_train)
+        y_pred = np.clip(y_pred, a_min=0.004, a_max=0.996)
+        log_loss = -np.sum(y_train * np.log(y_pred) + (1 - y_train) * np.log(1 - y_pred)) / len(y_train)
+
+        print('\nlogloss\n', log_loss)
+
+        y_pred = clf.predict(svm_test)
+    else:
+        y_pred = model.predict(x_test)
+
+    write_pred(y_pred, 'sample_submission.csv', 'pred.csv', clip=True)
+
+    # predict train set
+    # x_train, _, _ = load_fv(h5_files)
+    #
+    # y_pred = model.predict(x_train, batch_size=16, verbose=1)
+    # df = pd.read_csv('train_pred.csv')
+    # train_gen = gen.flow_from_directory('train_classified', img_size, shuffle=False,
+    #                                     batch_size=16)
+    #
+    # idx_patten = re.compile(r'\.(\d+)\.')
+    # for i, filename in enumerate(train_gen.filenames):
+    #     kind = filename[0:3]
+    #     flip = filename.__contains__('flip')
+    #     index = int(idx_patten.search(filename).group(1))
+    #     if kind == 'dog':
+    #         index += 25000
+    #     if flip:
+    #         index += 12500
+    #     df.set_value(index - 1, 'label', y_pred[i])
+    #
+    # df.to_csv('train_pred.csv', index=None)
+
+
+main(batch_size=128, epochs=12, method='FC')

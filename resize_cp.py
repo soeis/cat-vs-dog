@@ -30,15 +30,15 @@ train_dog = filter(lambda x: x[:3] == 'dog', train_imgnames)
 
 rmrf_mkdir('train_classified')
 rmrf_mkdir('test_processed')
-os.mkdir('train_classified/cat')
-os.mkdir('train_classified/dog')
-os.mkdir('test_processed/all')
+os.mkdir('train_classified\\cat')
+os.mkdir('train_classified\\dog')
+os.mkdir('test_processed\\all')
 
 img_size = [299, 299]
 
 for filename in train_cat:
-    resize_cp('train/' + filename, img_size, 'train_classified/cat/' + filename)
+    resize_cp('train\\' + filename, img_size, 'train_classified\\cat\\' + filename)
 for filename in train_dog:
-    resize_cp('train/' + filename, img_size, 'train_classified/dog/' + filename)
+    resize_cp('train\\' + filename, img_size, 'train_classified\\dog\\' + filename)
 for filename in test_imgnames:
-    resize_cp('test/' + filename, img_size, 'test_processed/all/' + filename)
+    resize_cp('test\\' + filename, img_size, 'test_processed\\all\\' + filename)
