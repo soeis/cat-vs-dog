@@ -42,3 +42,9 @@
 
 * 全连接
   * DROP OUT：增加网络鲁棒性
+
+## 最好结果
+
+- public leaderboard 12th, log loss 0.03842
+
+- [下载地址](https://github.com/soeis/cat-vs-dog/releases/tag/v1.0)
