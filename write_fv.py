@@ -7,7 +7,7 @@ import h5py
 
 
 # write the feature vectors to the .h5 file
-def write_fv(model_func, img_size, preprocessor):
+def write_fv(model_func, img_size, preprocessor=None):
     fv_file = 'fv_{0}.h5'.format(model_func.__name__)
     if os.path.exists(fv_file):
         os.remove(fv_file)
@@ -38,6 +38,7 @@ def write_fv(model_func, img_size, preprocessor):
         h.create_dataset('label', data=train_gen.classes)
 
 
-# model: Xception & InceptionV3
+# model: Xception & InceptionV3 & InceptionResNetV2
 write_fv(Xception, [299, 299], xception.preprocess_input)
 write_fv(InceptionV3, [299, 299], inception_v3.preprocess_input)
+write_fv(InceptionResNetV2, [299, 299], inception_resnet_v2.preprocess_input)
