@@ -173,7 +173,7 @@ def avr_model(epochs):
     y = Dropout(0.5)(y)
     y = Dense(512, activation='relu')(y)
     y = Dense(1, activation='sigmoid', name='classifier')(y)
-    model = Model(x, y, name='IceptionV3_GAP')
+    model = Model(x, y, name='IceptionResNetV2_GAP')
     model.compile(optimizer='adam',
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
