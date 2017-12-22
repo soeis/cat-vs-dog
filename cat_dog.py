@@ -40,11 +40,12 @@ def write_pred(pred, template, dst, clip=False):
     df.to_csv(dst, index=None)
 
 
-def main(batch_size, epochs, early_stop=True, patience=3, method='FC'):
+def train(batch_size, epochs, early_stop=True, patience=3, method='FC'):
     if method not in ['FC', 'SVM']:
         raise ValueError('Arg method must be either \'FC\' or \'SVM\'.')
 
-    h5_files = ['fv_Xception.h5', 'fv_InceptionV3.h5']
+    # h5_files = ['fv_Xception.h5', 'fv_InceptionV3.h5', 'fv_InceptionResNetV2.h5']
+    h5_files = ['fv_Xception.h5', 'fv_InceptionV3.h5', 'fv_InceptionResNetV2.h5']
     x_train, x_test, y_train = load_fv(h5_files)
 
     # shuffle feature vectors
@@ -55,7 +56,9 @@ def main(batch_size, epochs, early_stop=True, patience=3, method='FC'):
 
     # build model
     x = Input(shape=[x_train.shape[1]])
-    y = Dropout(0.5)(x)
+    y = Dense(2048, activation='relu')(x)
+    y = Dropout(0.5)(y)
+    y = Dense(1024, activation='relu')(y)
     if method == 'SVM':
         y = Dense(20, activation='sigmoid', name='svm')(y)
     y = Dense(1, activation='sigmoid', name='classifier')(y)
@@ -67,10 +70,11 @@ def main(batch_size, epochs, early_stop=True, patience=3, method='FC'):
                   metrics=['accuracy'])
     if early_stop:
         es = EarlyStopping(monitor='val_loss', patience=patience)
+        callbacks = [es]
     else:
-        es = None
+        callbacks = None
     model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=0.2,
-              callbacks=[es], verbose=2)
+              callbacks=callbacks, verbose=2)
 
     if method == 'SVM':
         svm_model = Model(inputs=model.input, outputs=model.get_layer(name='svm').output)
@@ -83,8 +87,9 @@ def main(batch_size, epochs, early_stop=True, patience=3, method='FC'):
 
         # predict test set
         y_pred = clf.predict(svm_train)
-        y_pred = np.clip(y_pred, a_min=0.004, a_max=0.996)
-        log_loss = -np.sum(y_train * np.log(y_pred) + (1 - y_train) * np.log(1 - y_pred)) / len(y_train)
+        y_pred = np.clip(y_pred, a_min=0.005, a_max=0.995)
+        log_loss = -np.sum(y_train * np.log(y_pred) + (1 - y_train) * np.log(1 - y_pred)) / len(
+            y_train)
 
         print('\nlogloss\n', log_loss)
 
@@ -116,4 +121,73 @@ def main(batch_size, epochs, early_stop=True, patience=3, method='FC'):
     # df.to_csv('train_pred.csv', index=None)
 
 
-main(batch_size=128, epochs=12, method='FC')
+def avr_model(epochs):
+    h5_files = ['fv_Xception.h5']
+    x_train, x_test, y_train = load_fv(h5_files)
+    # shuffle feature vectors
+    idx = np.arange(x_train.shape[0])
+    np.random.shuffle(idx)
+    x_train = x_train[idx]
+    y_train = y_train[idx]
+    # build model
+    x = Input(shape=[x_train.shape[1]])
+    y = Dense(1024, activation='relu')(x)
+    y = Dropout(0.5)(y)
+    y = Dense(512, activation='relu')(y)
+    y = Dense(1, activation='sigmoid', name='classifier')(y)
+    model = Model(x, y, name='Xception_GAP')
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    model.fit(x_train, y_train, batch_size=128, epochs=epochs[0], validation_split=0.2,
+              callbacks=None, verbose=2)
+    xception_pred = model.predict(x_test)
+
+    h5_files = ['fv_InceptionV3.h5']
+    x_train, x_test, y_train = load_fv(h5_files)
+    # shuffle feature vectors
+    x_train = x_train[idx]
+    y_train = y_train[idx]
+    # build model
+    x = Input(shape=[x_train.shape[1]])
+    y = Dense(1024, activation='relu')(x)
+    y = Dropout(0.5)(y)
+    y = Dense(512, activation='relu')(y)
+    y = Dense(1, activation='sigmoid', name='classifier')(y)
+    model = Model(x, y, name='IceptionV3_GAP')
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    model.fit(x_train, y_train, batch_size=128, epochs=epochs[1], validation_split=0.2,
+              callbacks=None, verbose=2)
+    inception_pred = model.predict(x_test)
+
+    h5_files = ['fv_InceptionResNetV2.h5']
+    x_train, x_test, y_train = load_fv(h5_files)
+    # shuffle feature vectors
+    x_train = x_train[idx]
+    y_train = y_train[idx]
+    # build model
+    x = Input(shape=[x_train.shape[1]])
+    y = Dense(1024, activation='relu')(x)
+    y = Dropout(0.5)(y)
+    y = Dense(512, activation='relu')(y)
+    y = Dense(1, activation='sigmoid', name='classifier')(y)
+    model = Model(x, y, name='IceptionV3_GAP')
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    model.fit(x_train, y_train, batch_size=128, epochs=epochs[2], validation_split=0.2,
+              callbacks=None, verbose=2)
+    inceptionres_pred = model.predict(x_test)
+
+    acc = [0.790, 0.788, 0.804]
+
+    y_pred = (xception_pred * acc[0] + inception_pred * acc[1] + inceptionres_pred * acc[2]) / np.sum(acc)
+
+    write_pred(y_pred, 'sample_submission.csv', 'pred.csv', clip=True)
+
+
+# train(batch_size=128, epochs=20, early_stop=False, method='FC')
+
+avr_model(epochs=[12, 20, 12])
