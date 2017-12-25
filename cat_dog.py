@@ -30,8 +30,8 @@ def write_pred(pred, template, dst, clip=False):
     df = pd.read_csv(template)
     gen = ImageDataGenerator()
     img_size = [299, 299]
-    test_gen = gen.flow_from_directory('test_processed', img_size, shuffle=False,
-                                       batch_size=16, class_mode=None)
+    test_gen = gen.flow_from_directory(
+        'test_processed', img_size, shuffle=False, batch_size=16, class_mode=None)
     # write the df in the correct order
     for i, filename in enumerate(test_gen.filenames):
         index = int(filename[filename.rfind('\\') + 1:filename.rfind('.')])
@@ -74,8 +74,8 @@ def train(batch_size, epochs, early_stop=True, patience=3, method='FC'):
         callbacks = [es]
     else:
         callbacks = None
-    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=0.2,
-              callbacks=callbacks, verbose=2)
+    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs,
+              validation_split=0.2, callbacks=callbacks, verbose=2)
 
     if method == 'SVM':
         svm_model = Model(inputs=model.input,
@@ -90,8 +90,8 @@ def train(batch_size, epochs, early_stop=True, patience=3, method='FC'):
         # predict test set
         y_pred = clf.predict(svm_train)
         y_pred = np.clip(y_pred, a_min=0.005, a_max=0.995)
-        log_loss = -np.sum(y_train * np.log(y_pred) + (1 - y_train) * np.log(1 - y_pred)) / len(
-            y_train)
+        log_loss = -np.sum(y_train * np.log(y_pred) +
+                           (1 - y_train) * np.log(1 - y_pred)) / len(y_train)
 
         print('\nlogloss\n', log_loss)
 
@@ -99,13 +99,14 @@ def train(batch_size, epochs, early_stop=True, patience=3, method='FC'):
     else:
         y_pred = model.predict(x_test)
 
-    write_pred(y_pred, 'sample_submission.csv', 'pred.csv', clip=True)
+    write_pred(y_pred, 'resource\\sample_submission.csv',
+               'pred.csv', clip=True)
 
     # predict train set
     # x_train, _, _ = load_fv(h5_files)
     #
     # y_pred = model.predict(x_train, batch_size=16, verbose=1)
-    # df = pd.read_csv('train_pred.csv')
+    # df = pd.read_csv('resource\\train_pred.csv')
     # train_gen = gen.flow_from_directory('train_classified', img_size, shuffle=False,
     #                                     batch_size=16)
     #
@@ -120,7 +121,7 @@ def train(batch_size, epochs, early_stop=True, patience=3, method='FC'):
     #         index += 12500
     #     df.set_value(index - 1, 'label', y_pred[i])
     #
-    # df.to_csv('train_pred.csv', index=None)
+    # df.to_csv('resource\\train_pred.csv', index=None)
 
 
 def avr_model(epochs):
@@ -141,8 +142,8 @@ def avr_model(epochs):
     model.compile(optimizer='adam',
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
-    model.fit(x_train, y_train, batch_size=128, epochs=epochs[0], validation_split=0.2,
-              callbacks=None, verbose=2)
+    model.fit(x_train, y_train, batch_size=128,
+              epochs=epochs[0], validation_split=0.2, callbacks=None, verbose=2)
     xception_pred = model.predict(x_test)
 
     h5_files = ['fv_InceptionV3.h5']
@@ -160,8 +161,8 @@ def avr_model(epochs):
     model.compile(optimizer='adam',
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
-    model.fit(x_train, y_train, batch_size=128, epochs=epochs[1], validation_split=0.2,
-              callbacks=None, verbose=2)
+    model.fit(x_train, y_train, batch_size=128,
+              epochs=epochs[1], validation_split=0.2, callbacks=None, verbose=2)
     inception_pred = model.predict(x_test)
 
     h5_files = ['fv_InceptionResNetV2.h5']
@@ -179,8 +180,8 @@ def avr_model(epochs):
     model.compile(optimizer='adam',
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
-    model.fit(x_train, y_train, batch_size=128, epochs=epochs[2], validation_split=0.2,
-              callbacks=None, verbose=2)
+    model.fit(x_train, y_train, batch_size=128,
+              epochs=epochs[2], validation_split=0.2, callbacks=None, verbose=2)
     inceptionres_pred = model.predict(x_test)
 
     acc = [0.790, 0.788, 0.804]
@@ -188,7 +189,8 @@ def avr_model(epochs):
     y_pred = (xception_pred * acc[0] + inception_pred *
               acc[1] + inceptionres_pred * acc[2]) / np.sum(acc)
 
-    write_pred(y_pred, 'sample_submission.csv', 'pred.csv', clip=True)
+    write_pred(y_pred, 'resource\\sample_submission.csv',
+               'pred.csv', clip=True)
 
 
 # train(batch_size=128, epochs=20, early_stop=False, method='FC')
