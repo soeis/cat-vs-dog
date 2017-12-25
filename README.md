@@ -22,7 +22,7 @@
 
 - 运行cat_dog.py生成预测表格pred.csv，可提交kaggle上检验结果。
 
-- 需要安装的python库：pillow，Pandas, OpenCV，sklearn
+- 需要安装的python库：pillow，Pandas, OpenCV (optional, for clahe), sklearn (optional, for SVM)
 
 ## 模型优化
 
@@ -36,9 +36,13 @@
 
   - 人工筛查数据集：没有明显改善
 
-- 多模型预测
+- 模型融合
 
   - 增加InceptionV3模型：大幅度减少了log loss
+
+  - 继续增加InceptionResNetV2模型：减少log loss
+
+  - 加权平均：目前最优
 
 - SVM
 
@@ -46,7 +50,7 @@
 
 - 全连接
 
-  - DROP OUT：增加网络鲁棒性
+  - Dropout：增加网络鲁棒性
 
 ## 最好结果
 

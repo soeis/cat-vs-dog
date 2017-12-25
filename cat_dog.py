@@ -45,7 +45,8 @@ def train(batch_size, epochs, early_stop=True, patience=3, method='FC'):
         raise ValueError('Arg method must be either \'FC\' or \'SVM\'.')
 
     # h5_files = ['fv_Xception.h5', 'fv_InceptionV3.h5', 'fv_InceptionResNetV2.h5']
-    h5_files = ['fv_Xception.h5', 'fv_InceptionV3.h5', 'fv_InceptionResNetV2.h5']
+    h5_files = ['fv_Xception.h5', 'fv_InceptionV3.h5',
+                'fv_InceptionResNetV2.h5']
     x_train, x_test, y_train = load_fv(h5_files)
 
     # shuffle feature vectors
@@ -77,7 +78,8 @@ def train(batch_size, epochs, early_stop=True, patience=3, method='FC'):
               callbacks=callbacks, verbose=2)
 
     if method == 'SVM':
-        svm_model = Model(inputs=model.input, outputs=model.get_layer(name='svm').output)
+        svm_model = Model(inputs=model.input,
+                          outputs=model.get_layer(name='svm').output)
         svm_train = svm_model.predict(x_train, batch_size=16, verbose=1)
 
         clf = SVC()
@@ -183,7 +185,8 @@ def avr_model(epochs):
 
     acc = [0.790, 0.788, 0.804]
 
-    y_pred = (xception_pred * acc[0] + inception_pred * acc[1] + inceptionres_pred * acc[2]) / np.sum(acc)
+    y_pred = (xception_pred * acc[0] + inception_pred *
+              acc[1] + inceptionres_pred * acc[2]) / np.sum(acc)
 
     write_pred(y_pred, 'sample_submission.csv', 'pred.csv', clip=True)
 
