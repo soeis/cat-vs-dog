@@ -18,19 +18,23 @@ def write_fv(model_func, img_size, preprocessor=None):
         x = Lambda(preprocessor)(x)
 
     # do not include the fully-connected layer, subsample through average pooling layer
-    base_model = model_func(input_tensor=x, weights='imagenet', include_top=False)
-    model = Model(base_model.input, GlobalAveragePooling2D()(base_model.output))
+    base_model = model_func(
+        input_tensor=x, weights='imagenet', include_top=False)
+    model = Model(base_model.input, GlobalAveragePooling2D()
+                  (base_model.output))
 
     # read img from file
     gen = ImageDataGenerator()
-    train_gen = gen.flow_from_directory('train_classified', img_size, shuffle=False,
-                                        batch_size=16)
-    test_gen = gen.flow_from_directory('test_processed', img_size, shuffle=False,
-                                       batch_size=16, class_mode=None)
+    train_gen = gen.flow_from_directory(
+        'train_classified', img_size, shuffle=False, batch_size=16)
+    test_gen = gen.flow_from_directory(
+        'test_processed', img_size, shuffle=False, batch_size=16, class_mode=None)
 
     # generate feature vectors and save them as .h5 file
-    train = model.predict_generator(train_gen, train_gen.samples / train_gen.batch_size)
-    test = model.predict_generator(test_gen, test_gen.samples / test_gen.batch_size)
+    train = model.predict_generator(
+        train_gen, train_gen.samples / train_gen.batch_size)
+    test = model.predict_generator(
+        test_gen, test_gen.samples / test_gen.batch_size)
 
     with h5py.File(fv_file) as h:
         h.create_dataset('train', data=train)
